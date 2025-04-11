@@ -12,9 +12,12 @@ def run_experiment(case: AugCase):
 
     # Load data
     train_loader, val_loader, test_loader, class_names = get_dataloaders(case, CONFIG)
+    print("Loaded classes:",class_names)
+    # Set the case in global config
+    CONFIG["case"] = case
 
     # Model
-    model = LitResNet(num_classes=len(class_names), case=case, config=CONFIG)
+    model = LitResNet(num_classes=len(class_names)) # Fix: removed extra args to accept CONFIG["case"] in CLI
 
     # Training & Test
     trainer = pl.Trainer(max_epochs=CONFIG["max_epochs"], accelerator="gpu", logger=False)
