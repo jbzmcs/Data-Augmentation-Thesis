@@ -9,42 +9,25 @@ from config import CONFIG
 def filter_dataset_by_classes(dataset, classes_to_keep):
     """
     Filters an ImageFolder dataset to only include specified classes.
-    Adjusts the samples and targets accordingly.
+    Remaps targets to a new class index range starting from 0.
     """
-    # Determine the indices of the samples that belong to the desired classes.
-    filtered_samples = []
-    filtered_targets = []
-    # Get the mapping from class names to indices
     original_class_to_idx = dataset.class_to_idx
+    new_classes = sorted([cls for cls in classes_to_keep if cls in original_class_to_idx])
+    new_class_to_idx = {cls: i for i, cls in enumerate(new_classes)}
 
-    # Create a set of class indices to keep.
-    indices_to_keep = {original_class_to_idx[c] for c in classes_to_keep if c in original_class_to_idx}
-
-    for sample, target in zip(dataset.samples, dataset.targets):
-        if target in indices_to_keep:
-            filtered_samples.append(sample)
-            filtered_targets.append(target)
-
-    # Update the dataset.
-    dataset.samples = filtered_samples
-    dataset.targets = filtered_targets
-    # Optionally, update dataset.classes and class_to_idx for clarity.
-    # For a proper update, re-map the indices for only the filtered classes.
-    new_classes = sorted(list(classes_to_keep))
-    new_class_to_idx = {cls_name: i for i, cls_name in enumerate(new_classes)}
-
-    # Map old target indices to new ones.
+    filtered_samples = []
     new_targets = []
-    new_samples = []
-    for sample, target in zip(filtered_samples, filtered_targets):
-        # Find class name corresponding to the original index.
-        for cls_name, orig_idx in original_class_to_idx.items():
-            if orig_idx == target and cls_name in new_class_to_idx:
-                new_targets.append(new_class_to_idx[cls_name])
-                new_samples.append(sample)
+
+    for path, target in dataset.samples:
+        # Get class name from original index
+        for class_name, orig_idx in original_class_to_idx.items():
+            if target == orig_idx and class_name in new_class_to_idx:
+                filtered_samples.append((path, new_class_to_idx[class_name]))
+                new_targets.append(new_class_to_idx[class_name])
                 break
 
-    dataset.samples = new_samples
+    # Apply filtered results
+    dataset.samples = filtered_samples
     dataset.targets = new_targets
     dataset.classes = new_classes
     dataset.class_to_idx = new_class_to_idx
