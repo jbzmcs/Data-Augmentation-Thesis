@@ -34,6 +34,7 @@ class LitResNet(pl.LightningModule):
 
         self.case = CONFIG["case"]
         self.augment = KorniaAugmentations() if self.case in [AugCase.CASE1, AugCase.CASE2, AugCase.CASE3] else None
+        self.metrics = {}  # Track train/val/test metrics
 
     def forward(self, x):
         return self.resnet(x)
@@ -48,6 +49,7 @@ class LitResNet(pl.LightningModule):
         acc = (logits.argmax(dim=1) == y).float().mean()
         self.log("train_loss", loss, prog_bar=True)
         self.log("train_acc", acc, prog_bar=True)
+        self.metrics["train_acc"] = acc.item()
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -60,6 +62,7 @@ class LitResNet(pl.LightningModule):
         acc = (logits.argmax(dim=1) == y).float().mean()
         self.log("val_loss", loss, prog_bar=True)
         self.log("val_acc", acc, prog_bar=True)
+        self.metrics["val_acc"] = acc.item()
 
     def test_step(self, batch, batch_idx):
         # Apply augmentation only in Case 3
