@@ -8,44 +8,23 @@ from config import CONFIG
 
 def filter_dataset_by_classes(dataset, classes_to_keep):
     """
-    Filters an ImageFolder dataset to only include specified classes.
-    Adjusts the samples and targets accordingly.
+    Filters an ImageFolder dataset to only include specified classes,
+    and remaps their labels to start from 0.
     """
-    # Determine the indices of the samples that belong to the desired classes.
-    filtered_samples = []
-    filtered_targets = []
-    # Get the mapping from class names to indices
     original_class_to_idx = dataset.class_to_idx
-
-    # Create a set of class indices to keep.
-    indices_to_keep = {original_class_to_idx[c] for c in classes_to_keep if c in original_class_to_idx}
-
-    for sample, target in zip(dataset.samples, dataset.targets):
-        if target in indices_to_keep:
-            filtered_samples.append(sample)
-            filtered_targets.append(target)
-
-    # Update the dataset.
-    dataset.samples = filtered_samples
-    dataset.targets = filtered_targets
-    # Optionally, update dataset.classes and class_to_idx for clarity.
-    # For a proper update, re-map the indices for only the filtered classes.
     new_classes = sorted(list(classes_to_keep))
     new_class_to_idx = {cls_name: i for i, cls_name in enumerate(new_classes)}
 
-    # Map old target indices to new ones.
-    new_targets = []
+    # Build new samples and targets with remapped labels
     new_samples = []
-    for sample, target in zip(filtered_samples, filtered_targets):
-        # Find class name corresponding to the original index.
-        for cls_name, orig_idx in original_class_to_idx.items():
-            if orig_idx == target and cls_name in new_class_to_idx:
-                new_targets.append(new_class_to_idx[cls_name])
-                new_samples.append(sample)
-                break
+    for path, target in dataset.samples:
+        class_name = os.path.basename(os.path.dirname(path))
+        if class_name in new_class_to_idx:
+            new_samples.append((path, new_class_to_idx[class_name]))
 
+    # Apply filtered state
     dataset.samples = new_samples
-    dataset.targets = new_targets
+    dataset.targets = [target for _, target in new_samples]
     dataset.classes = new_classes
     dataset.class_to_idx = new_class_to_idx
 
