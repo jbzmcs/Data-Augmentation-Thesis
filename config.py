@@ -14,5 +14,5 @@ CONFIG = {
     "log_csv": True,
     "batch_size": 32,
     "num_workers": 4,
-    "max_epochs": 10
+    "max_epochs": 50 # ? previously 10 epochs
 }
