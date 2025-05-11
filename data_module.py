@@ -1,3 +1,4 @@
+# data_module.py
 import os
 import pytorch_lightning as pl
 from torchvision.datasets import ImageFolder
@@ -31,7 +32,7 @@ def filter_dataset_by_classes(dataset, classes_to_keep):
     return dataset
 
 
-def get_dataloaders(case, config, filter_classes=None):
+def get_dataloaders(case, config, filter_classes=None, model_name = "resnet18"):
     """
     Loads the train, validation, and test datasets from subfolders.
     Optionally filters to only the provided classes (e.g., ['noncrack', 'thincrack']).
@@ -42,9 +43,12 @@ def get_dataloaders(case, config, filter_classes=None):
     val_path = os.path.join(dataset_path, "val")
     test_path = os.path.join(dataset_path, "test")
 
+    # Set input size based on model
+    input_size = (299, 299) if "inception" in model_name.lower() else (224, 224)
+
     # Base transform (without augmentation) for all splits.
     base_transform = T.Compose([
-        T.Resize((224,224)), # Fix: variable image size issue
+        T.Resize(input_size),
         T.ToTensor(),
         T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
@@ -77,12 +81,13 @@ def get_dataloaders(case, config, filter_classes=None):
 # Later, you can call get_dataloaders(case, CONFIG) to use all classes.
 
 class PanelDataModule(pl.LightningDataModule):
-    def __init__(self, dataset_path, batch_size=32, num_workers=4, filter_classes=None):
+    def __init__(self, dataset_path, batch_size=32, num_workers=4, filter_classes=None, model_name="resnet18"):
         super().__init__()
         self.dataset_path = dataset_path
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.filter_classes = filter_classes
+        self.model_name = model_name
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
@@ -92,7 +97,8 @@ class PanelDataModule(pl.LightningDataModule):
         train_loader, val_loader, test_loader, class_names = get_dataloaders(
             case=CONFIG["case"],
             config=CONFIG,
-            filter_classes=self.filter_classes
+            filter_classes=self.filter_classes,
+            model_name=self.model_name
         )
         self.train_loader = train_loader
         self.val_loader = val_loader
